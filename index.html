@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/vue.global.js"></script>
+    <link href="/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/fontawesome/fontawesome.min.css" />
+    <link rel="stylesheet" href="/css/fontawesome/brands.min.css" />
+    <link rel="stylesheet" href="/css/fontawesome/solid.min.css" />
+    <link rel="icon" type="image/png" href="/img/icon.png" />
+    <title>書本印製順序產生器</title>
+    <style></style>
+  </head>
+  <body>
+    <div id="app" class="container">
+      <h1 class="text-center">書本印製順序產生器</h1>
+      <div class="row">
+        <div class="col-12">
+          <p class="h3 fw-bold mt-3">使用方法：</p>
+          <ul>
+            <li>
+              參數設定：
+              <ul>
+                <li>若此書本內容頁面共有20頁。</li>
+                <li>請在下方「頁數」欄位輸入20。</li>
+                <li>若此書本內容頁面非4倍數，請增加設置文件最後一頁為空白頁。</li>
+                <li>如：14頁內容外加1頁的空白頁，所以現實中會有15頁。</li>
+                <li>請勿輸入「數字」以外的參數。</li>
+              </ul>
+            </li>
+            <li>
+              印製方法：
+              <ul>
+                <li>請以單面列印，二合一進行</li>
+                <li>先複製「單數頁」參數，印製單數頁。</li>
+                <li>短邊翻頁，或以印表機特性翻頁。</li>
+                <li>再複製「雙數頁」參數，印製雙數頁。</li>
+              </ul>
+            </li>
+            <li>將每頁對半切割，即可裝訂成一本小書。</li>
+          </ul>
+        </div>
+        <hr />
+        <div class="col-12">
+          <div class="input-group mb-3">
+            <span class="input-group-text" id="basic-addon1">頁數</span>
+            <input type="text" class="form-control" v-model="page" @keydown.enter="production" />
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="d-grid gap-2">
+            <button class="btn btn-primary" type="button" @click="production">產製印製順序</button>
+          </div>
+          <p class="text-danger text-center">{{ errorMessage }}</p>
+        </div>
+        <div class="col-12 mt-3">
+          <p class="h4 fw-bold"><span class="text-danger text-break">{{hint}}</span></p>
+          <p class="h4 fw-bold">單數頁：<span class="text-success text-break">{{resultOdd}}</span></p>
+          <p class="h4 fw-bold">雙數頁：<span class="text-success text-break">{{resultEven}}</span></p>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          page: "4",
+          errorStatus: false,
+          errorMessage: "驗證訊息",
+          hint: "請放A4紙n張。",
+          resultOdd: "",
+          resultEven: "",
+        };
+      },
+      created() {},
+      methods: {
+        production: function () {
+          if (!this.errorStatus) {
+            let Odd = [];
+            let Even = [];
+            let realPage = parseInt(this.page);
+            let blankPage = realPage + 1;
+            // 單數頁(4n、4n-1)
+            for (let i = 1; i <= Math.ceil(realPage / 4) * 4; i++) {
+              if (i % 2 != 0) {
+                Odd.push(i);
+              }
+            }
+            // 雙數頁(4n、4n-1)
+            for (let i = 1; i <= (Math.ceil(realPage / 4) * 4) / 2; i++) {
+              let n = i * 2;
+              if ((n / 2) % 2 == 1) {
+                Even[i] = n;
+              } else {
+                Even[i - 2] = n;
+              }
+            }
+            if (realPage % 4 !== 3 && realPage % 4 !== 0) {
+              Odd = [];
+              Even = [];
+              // 單數頁(4n-3、4n-2)
+              for (let i = 1; i <= Math.ceil(realPage / 4) * 4 - (4 - (realPage % 4)); i++) {
+                if (i % 2 != 0) {
+                  Odd.push(i);
+                }
+              }
+              Odd.push(blankPage);
+              // 雙數頁(4n-3、4n-2)
+              for (let i = 1; i <= realPage - realPage / 2; i++) {
+                let n = i * 2;
+                if ((n / 2) % 2 == 1) {
+                  Even[i] = n;
+                } else {
+                  Even[i - 2] = n;
+                }
+              }
+              if (realPage % 4 === 1) {
+                if (realPage > 4) {
+                  Even.push(blankPage);
+                  Even.push(blankPage);
+                } else {
+                  Even[0] = blankPage;
+                  Even[1] = blankPage;
+                }
+              }
+              if (realPage % 4 === 2) {
+                if (realPage > 4) {
+                  Even[Math.floor(realPage / 4) * 2] = blankPage;
+                } else {
+                  Even[0] = blankPage;
+                }
+              }
+            }
+            this.hint = "請放A4紙" + Math.ceil(realPage / 4) + "張。";
+            if (realPage % 4 !== 0) {
+              this.hint = "請放A4紙" + Math.ceil(realPage / 4) + "張。請確認第" + blankPage + "頁，是否為「空白頁」！";
+            }
+            this.resultOdd = Odd.toString();
+            this.resultEven = Even.toString();
+          }
+        },
+      },
+      mounted() {},
+      computed: {},
+      watch: {
+        page: function () {
+          const isText = /^\d+$/;
+          if (this.page.trim() === "") {
+            this.errorStatus = true;
+            this.errorMessage = "頁數參數不能為空";
+          } else if (!isText.test(this.page)) {
+            this.errorStatus = true;
+            this.errorMessage = "頁數參數只能輸入數字";
+          } else {
+            this.errorStatus = false;
+            this.errorMessage = "驗證訊息";
+          }
+        },
+      },
+    }).mount("#app");
+  </script>
+</html>
